@@ -1,0 +1,39 @@
+---
+
+- hosts: target_hosts
+  gather_facts: false
+  remote_user: root
+  tasks:
+  - block:
+      - name: Add user to target host
+        user:
+          name: "{{ user_name }}"
+          comment: "{{ user_desc }}"
+          shell: /bin/bash
+
+      - name: Add SSH keys
+        authorized_key:
+          user: "{{ user_name }}"
+          state: present
+          key: "{{ lookup('file', '../keys/{{ user_name }}.pub') }}"
+    when: action is defined and action == "grant"
+    tags: add_user
+
+  - name: Remove SSH keys
+    authorized_key:
+      user: "{{ user_name }}"
+      state: absent
+      key: "{{ lookup('file', '../keys/{{ user_name }}.pub') }}"
+    when: action is defined and action == "revoke"
+    tags: remove_keys
+
+  - name: Remove user from target hosts
+    user:
+      name: "{{ user_name }}"
+      state: absent
+      remove: yes
+    when: action is defined and action == "remove_user"
+    tags: remove_user
+
+      
+    
